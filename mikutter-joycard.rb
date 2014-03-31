@@ -1,9 +1,35 @@
 require "yaml"
 
+
 # ウインドウクラス
 class Gtk::MikutterWindow
   # ジョイカードを接続するウィジェット、言わば拡張コネクタを得る
   attr_reader :container
+end
+
+
+# ボタンのアイコンを得る
+def get_icon_image(config_icon, command_icon, cell_size)
+  image = nil
+
+  # アイコン定義あり
+  if config_icon
+    icon_path = File.join(File.dirname(__FILE__), config_icon)
+
+    if File.exists?(icon_path)
+      image = Gtk::WebIcon.new(icon_path, cell_size, cell_size)
+    else
+      image = Gtk::Image.new(Gdk::WebImageLoader.notfound_pixbuf(cell_size, cell_size))
+    end
+
+  # コマンドにアイコンあり
+  elsif command_icon && command_icon.is_a?(String)
+    image = Gtk::WebIcon.new(command_icon, cell_size, cell_size)
+  else
+    image = Gtk::Image.new(Gdk::WebImageLoader.notfound_pixbuf(cell_size, cell_size))
+  end
+
+  image
 end
 
 
@@ -32,21 +58,8 @@ def create_joycard()
       next
     end
 
-    # アイコンを得る
-    if btn_conf["icon"] 
-      icon_path = File.join(File.dirname(__FILE__), btn_conf["icon"])
-
-      if !File.exists?(icon_path)
-        button = Gtk::Button.new.add(Gtk::Image.new(Gdk::WebImageLoader.notfound_pixbuf(cell_size, cell_size)))
-      else
-        button = Gtk::Button.new.add(Gtk::WebIcon.new(icon_path, cell_size, cell_size))
-      end
-    elsif !command[:icon] || command[:icon].is_a?(Proc)
-      button = Gtk::Button.new.add(Gtk::Image.new(Gdk::WebImageLoader.notfound_pixbuf(cell_size, cell_size)))
-    else
-      button = Gtk::Button.new.add(Gtk::WebIcon.new(command[:icon], cell_size, cell_size))
-    end
-
+    # ボタンを生成
+    button = Gtk::Button.new.add(get_icon_image(btn_conf["icon"], command[:icon], cell_size))
     button.height_request = cell_size
 
     # イベントハンドラ
@@ -70,10 +83,10 @@ def create_joycard()
 
       gui = Plugin::GUI::Window.active.active_class_of(target_gui_class)
 
-      # ウィジェットがアクティブでない
-      if !gui
-        # タイムラインの場合、アクティブなタブのTLを対象にする
-        if (target_gui_class == Plugin::GUI::Timeline)
+      # タイムライン
+      if (target_gui_class == Plugin::GUI::Timeline)
+        # ウィジェットがアクティブでない場合、アクティブなタブのTLを対象にする
+        if !gui
           tab = Plugin::GUI::Window.active.active_class_of(Plugin::GUI::Tab)
 
           if !tab
@@ -83,14 +96,14 @@ def create_joycard()
           gui = tab.children.find { |a| a.is_a?(Plugin::GUI::Timeline) }
         end
 
-        if !gui
-          next
-        end
- 
         # メッセージが選択されていない場合、一番上のメッセージを選択
-        if gui.selected_messages.length == 0
+        if gui && gui.selected_messages.length == 0
           Plugin.call(:gui_timeline_scroll_to_top, gui) 
         end
+      end
+
+      if !gui
+        next
       end
 
       # イベントを生成する
@@ -109,6 +122,7 @@ end
 
 
 Plugin.create(:mikutter_joycard) do
+  # ウインドウ生成時
   on_window_created { |i_window|
     # ジョイカードを接続する
     window = Plugin[:gtk].widgetof(i_window)
@@ -120,6 +134,7 @@ Plugin.create(:mikutter_joycard) do
   }
 
 
+  # タイムライン生成時
   on_timeline_created { |i_timeline|
     # 起動直後はホームタイムラインにフォーカスが当たる様にする
     if i_timeline.slug == :home_timeline
