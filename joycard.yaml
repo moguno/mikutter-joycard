@@ -1,0 +1,11 @@
+pad: { rows: 3, columns: 7 }
+cell: { px: 32 }
+buttons:
+ - { x: 0, y: 1, width: 1, height: 1, command: focus_left_tab, icon: left.png }
+ - { x: 2, y: 1, width: 1, height: 1, command: focus_right_tab, icon: right.png }
+ - { x: 1, y: 0, width: 1, height: 1, command: select_prev, icon: up.png }
+ - { x: 1, y: 2, width: 1, height: 1, command: select_next, icon: down.png }
+ - { x: 1, y: 1, width: 1, height: 1, command: timeline_scroll_to_top, icon: home.png }
+ - { x: 4, y: 1, width: 1, height: 1, command: favorite }
+ - { x: 5, y: 1, width: 1, height: 1, command: retweet }
+ - { x: 6, y: 1, width: 1, height: 1, command: reply_all }
